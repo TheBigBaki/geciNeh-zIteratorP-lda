@@ -180,6 +180,10 @@ public:
         --size_;
         return 1;
     }
+    
+    const_iterator y() const {
+        return Iterator{ &table[0], &table[table_size], true, size_};
+    }
 
     const_iterator begin() const {
         return Iterator{ &table[0], &table[table_size] };
@@ -317,6 +321,45 @@ private:
     Node* listPos;
     list* tablePos;
     list* end;
+    
+    bool special = false;
+    size_t totalCounter = 0;
+    size_t currentCounter = 0;
+    size_t table_size;
+    size_t size_;
+    list* begin;
+    
+    void skip() {
+        if (special) {
+            skipSpecial();
+        }
+        else {
+            skipToNext();
+        }
+    }
+    
+    void skipSpecial() {
+        if (totalCounter == size_ and currentCounter == totalCounter) {
+            skipToNext();
+            return;
+        }
+
+        if (totalCounter == currentCounter) {
+            totalCounter++;
+            currentCounter = 1;
+            reset();
+            return;
+        }
+
+        currentCounter++;
+        skipToNext();
+    }
+
+    void reset() {
+        tablePos = begin;
+        listPos = nullptr;
+        skipToFirst();
+    }
 
     void skipToNext() {
         if (tablePos == end) {
@@ -359,6 +402,12 @@ public:
     Iterator(list* tablePos, list* end) : listPos{ nullptr }, tablePos{ tablePos }, end{ end } {
         skipToFirst();
     }
+    
+    Iterator(list* tablePos, list* end, bool special, size_t size_) : listPos{ nullptr }, tablePos{ tablePos }, end{ end }, special{ special }, size_{ size_ }, begin{ tablePos } {
+        skipToFirst();
+        totalCounter++;
+        currentCounter++;
+    }
 
     reference operator*() const {
         return listPos->key;
@@ -369,13 +418,13 @@ public:
     }
 
     Iterator& operator++() {
-        skipToNext();
+        skip();
         return *this;
     }
 
     Iterator operator++(int) {
         auto rc{ *this };
-        skipToNext();
+        skip();
         return rc;
     }
 
